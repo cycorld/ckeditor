@@ -23,12 +23,20 @@ module Ckeditor
       params[:responseType] == JSON_TYPE
     end
 
+    def plupload?
+      params[:client] == "plupload"
+    end
+
     def ckeditor?
       !params[:CKEditor].blank?
     end
 
     def file
-      !(ckeditor? || json?) ? params[:qqfile] : params[:upload]
+      if plupload?
+        params[:file]
+      else
+        !(ckeditor? || json?) ? params[:qqfile] : params[:upload]
+      end
     end
 
     def current_mode
@@ -57,6 +65,12 @@ module Ckeditor
       }
     end
 
+    def success_plupload(relative_url_root = nil)
+      {
+        html: asset_url(relative_url_root)
+      }
+    end
+
     def success_default(_relative_url_root = nil)
       {
         json: asset.to_json(only: [:id, :type])
@@ -72,6 +86,12 @@ module Ckeditor
     def errors_ckeditor
       {
         html: javascript_tag("#{FUNCTION}(#{params[:CKEditorFuncNum]}, null, '#{error_message}');")
+      }
+    end
+
+    def errors_plupload
+      {
+        html: "!" + error_message
       }
     end
 
@@ -100,6 +120,8 @@ module Ckeditor
         :json
       elsif ckeditor?
         :ckeditor
+      elsif plupload?
+        :plupload
       else
         :default
       end
